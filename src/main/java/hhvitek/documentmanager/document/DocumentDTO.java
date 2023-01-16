@@ -10,6 +10,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Just DTO for more simple control over JSON structure...
+ */
 @Data
 @NoArgsConstructor
 public class DocumentDTO {
@@ -45,13 +48,14 @@ public class DocumentDTO {
 		return new DocumentDTO(documents);
 	}
 
-	public DocumentMetadata toMetadata() {
-		DocumentMetadata metadata = new DocumentMetadata();
-		metadata.setName(name);
-		metadata.setCreatedBy(createdBy);
-		metadata.setCreatedTime(createdTime);
-		metadata.setContentType(contentType);
+	public Document toDocument() {
+		Document document = new Document();
+		document.setId(id);
+		document.setName(name);
+		document.setCreatedBy(createdBy);
+		document.setCreatedTime(createdTime);
+		document.setContentType(contentType);
 
-		return metadata;
+		return document;
 	}
 }

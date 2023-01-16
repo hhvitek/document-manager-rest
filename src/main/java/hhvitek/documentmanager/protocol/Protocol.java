@@ -13,10 +13,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 
-import org.springframework.format.annotation.DateTimeFormat;
-
 import hhvitek.documentmanager.document.Document;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,8 +22,8 @@ import lombok.Setter;
 @Entity(name = "protocol")
 @Getter
 @Setter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
+@AllArgsConstructor
 public class Protocol {
 
 	@Id
@@ -34,7 +31,6 @@ public class Protocol {
 	private Integer id;
 
 	private String createdBy;
-	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
 	private LocalDateTime createdTime;
 	private ProtocolState state;
 

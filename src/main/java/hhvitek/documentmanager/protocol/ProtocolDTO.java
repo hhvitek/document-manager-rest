@@ -30,7 +30,10 @@ public class ProtocolDTO {
 		this.documentIds = protocol.getDocumentIds();
 	}
 
-	public Protocol toProtocol() {
+	/**
+	 * Creates protocol without id and documents.
+	 */
+	public Protocol toProtocolWithoutDocuments() {
 		Protocol protocol = new Protocol();
 		protocol.setCreatedBy(createdBy);
 		protocol.setCreatedTime(createdTime);
@@ -52,9 +55,6 @@ public class ProtocolDTO {
 		return documentIds != null && !documentIds.isEmpty();
 	}
 
-	/**
-	 * Excluding documents
-	 */
 	public void modify(Protocol protocolToModify) {
 		if (createdBy != null) {
 			protocolToModify.setCreatedBy(createdBy);
