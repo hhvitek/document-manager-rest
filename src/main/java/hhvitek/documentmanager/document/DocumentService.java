@@ -1,13 +1,14 @@
 package hhvitek.documentmanager.document;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import hhvitek.documentmanager.error.ApiException;
+import hhvitek.documentmanager.configuration.error.ApiException;
 
 
 @Service
@@ -33,11 +34,16 @@ public class DocumentService {
 	public Document create(MultipartFile file, String createdBy) throws IOException {
 		Document document = createDocumentFrom(file);
 		document.setCreatedBy(createdBy);
+		document.setCreatedTime(Instant.now());
 		return documentRepository.save(document);
 	}
 
 	private Document createDocumentFrom(MultipartFile file) throws IOException {
-		String name = StringUtils.cleanPath(file.getOriginalFilename());
+		String name = file.getOriginalFilename();
+		if (StringUtils.isBlank(name)) {
+			name = "unknown-file-name";
+		}
+
 		String contentType = file.getContentType();
 		byte[] fileContent = file.getBytes();
 
@@ -47,14 +53,17 @@ public class DocumentService {
 	public Document update(Integer id, MultipartFile file) throws IOException {
 		Document oldDocument = getOne(id);
 		Document document = createDocumentFrom(file);
-		oldDocument.modifyUsing(document);
+		oldDocument.modifyFrom(document);
 
-		return documentRepository.save(document);
+		return documentRepository.save(oldDocument);
 	}
 
 	public Document updateMetadataOnly(Integer id, Document metadataDocument) {
 		Document oldDocument = getOne(id);
-		oldDocument.modifyUsing(metadataDocument);
+
+		metadataDocument.clearAllNonMetadata(); // only metadata should be modified. For example let's not allow document id modification.
+		oldDocument.modifyFrom(metadataDocument);
+
 		return documentRepository.save(oldDocument);
 	}
 

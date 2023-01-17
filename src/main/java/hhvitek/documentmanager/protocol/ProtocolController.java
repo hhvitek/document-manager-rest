@@ -12,7 +12,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-
+/**
+ * GET /api/protocols - list all with metadata
+ * GET /api/protocols/{id} - list single protocol with metadata by id
+ *
+ * POST /api/protocols (JSON) - create a new protocol by JSON representation.
+ * PUT /api/protocols/{id} (JSON) - edit existing protocol
+ * PUT /api/protocols/{id}/editState/{string} - edit only protocol's state to {string} value
+ * DELETE /api/protocols/{id} - delete existing
+ */
 @RestController
 @RequestMapping("/api/protocols")
 public class ProtocolController {
@@ -23,39 +31,37 @@ public class ProtocolController {
 	}
 
 	@GetMapping
-	public List<ProtocolDTO> listAll() {
-		return ProtocolDTO.createList(protocolService.getAll());
+	public List<Protocol> listAll() {
+		return protocolService.getAll();
 	}
 
 	@GetMapping("/{id}")
-	public ProtocolDTO listOne(@PathVariable("id") Integer id) {
-		return ProtocolDTO.create(protocolService.getOne(id));
+	public Protocol listOne(@PathVariable("id") Integer id) {
+		return protocolService.getOne(id);
 	}
 
 	/**
-	 * Create a new protocol. Authenticated user is logged in createdBy filed.
+	 * Create a new protocol. Authenticated user is logged in createdBy field, if incoming JSON does not contain any createdBy value.
 	 */
 	@PostMapping
-	public ProtocolDTO create(@RequestBody ProtocolDTO dto, Authentication authentication) {
-		dto.setCreatedBy(authentication.getName());
-		return ProtocolDTO.create(protocolService.create(dto));
+	public Protocol create(@RequestBody ProtocolDTO dto, Authentication authentication) {
+		return protocolService.create(dto, authentication);
 	}
 
 	/**
-	 * Edit everything / Replace under specific id. May change createdBy field as requested
+	 * Edit everything / replace under specific id. May change createdBy field as requested.
 	 */
 	@PutMapping("/{id}")
-	public ProtocolDTO edit(@PathVariable("id") Integer id, @RequestBody ProtocolDTO dto) {
-		return ProtocolDTO.create(protocolService.update(id, dto));
+	public Protocol edit(@PathVariable("id") Integer id, @RequestBody ProtocolDTO dto) {
+		return protocolService.update(id, dto);
 	}
 
 	/**
-	 * To only modify protocol's state
+	 * Endpoint to only modify protocol's state.
 	 */
 	@PutMapping("/{id}/editState/{newState}")
-	public ProtocolDTO editState(@PathVariable("id") Integer id, @PathVariable("newState") ProtocolState newState) {
-		Protocol protocol = protocolService.updateState(id, newState);
-		return ProtocolDTO.create(protocol);
+	public Protocol editState(@PathVariable("id") Integer id, @PathVariable("newState") ProtocolState newState) {
+		return protocolService.updateState(id, newState);
 	}
 
 	@DeleteMapping("/{id}")

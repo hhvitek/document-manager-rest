@@ -21,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * GET /api/documents - list all with metadata
  * GET /api/documents/{id} - list single document with metadata by id
- * GET /api/documents/{id}/download - download single document by id
+ * GET /api/documents/{id}/download - download a single document by id
  *
  * POST /api/documents (MultipartFile) - create a new document by uploading a file to server
  * PUT /api/documents/{id} (MultipartFile) - reupload/replace existing document with a new one
@@ -38,26 +38,29 @@ public class DocumentController {
 	}
 
 	@GetMapping
-	public List<DocumentDTO> listAll() {
-		List<Document> documents = documentService.getAll();
-		return DocumentDTO.createList(documents);
+	public List<Document> listAll() {
+		return documentService.getAll();
 	}
 
 	@GetMapping("/{id}")
-	public DocumentDTO listOne(@PathVariable("id") Integer id) {
-		Document document = documentService.getOne(id);
-		return DocumentDTO.create(document);
+	public Document listOne(@PathVariable("id") Integer id) {
+		return documentService.getOne(id);
 	}
 
-	/**
+	/*
 	 * https://www.devglan.com/spring-boot/spring-boot-file-upload-download
 	 */
 	@GetMapping("/{id}/download")
 	public ResponseEntity<byte[]> download(@PathVariable("id") Integer id) {
 		Document document = documentService.getOne(id);
 
+		String contentType = document.getContentType();
+		if (contentType == null) {
+			contentType = "application/octet-stream";
+		}
+
 		return ResponseEntity.ok()
-				.contentType(MediaType.parseMediaType(document.getContentType()))
+				.contentType(MediaType.parseMediaType(contentType))
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + document.getName() + "\"")
 				.body(document.getFile());
 	}
@@ -66,29 +69,25 @@ public class DocumentController {
 	 * Create/upload a new document, logged user is marked as the creator of an uploaded file.
 	 */
 	@PostMapping
-	public DocumentDTO upload(@RequestParam("document") MultipartFile file, Authentication authentication) throws IOException {
+	public Document upload(@RequestParam("document") MultipartFile file, Authentication authentication) throws IOException {
 		String loggedUser = authentication.getName();
-		Document document = documentService.create(file, loggedUser);
-		return DocumentDTO.create(document);
+		return documentService.create(file, loggedUser);
 	}
 
 	/**
 	 * Re-upload/replace document and its metadata under specific id.
 	 */
 	@PutMapping("/{id}")
-	public DocumentDTO edit(@PathVariable("id") Integer id, @RequestParam("document") MultipartFile file) throws IOException {
-		Document document = documentService.update(id, file);
-		return DocumentDTO.create(document);
+	public Document edit(@PathVariable("id") Integer id, @RequestParam("document") MultipartFile file) throws IOException {
+		return documentService.update(id, file);
 	}
 
 	/**
 	 * Modifies just some document's metadata (name, contentType, createdBy & createdTime) while ignoring id and file itself...
 	 */
 	@PutMapping("/{id}/editMetadata")
-	public DocumentDTO editMetadata(@PathVariable("id") Integer id, @RequestBody DocumentDTO metadata) {
-		Document metadataDocument = metadata.toDocument();
-		Document document = documentService.updateMetadataOnly(id, metadataDocument);
-		return DocumentDTO.create(document);
+	public Document editMetadata(@PathVariable("id") Integer id, @RequestBody Document metadataDocument) {
+		return documentService.updateMetadataOnly(id, metadataDocument);
 	}
 
 	/**

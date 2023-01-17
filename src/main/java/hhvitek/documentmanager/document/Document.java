@@ -1,20 +1,26 @@
 package hhvitek.documentmanager.document;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import hhvitek.documentmanager.protocol.Protocol;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Entity(name = "document")
 @Data
 @NoArgsConstructor
@@ -23,30 +29,34 @@ public class Document {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer id;
 
+	@Column(nullable = false)
 	private String name;
+	@Column(nullable = false)
 	private String createdBy;
-	private LocalDateTime createdTime = LocalDateTime.now();
+	@Column(nullable = false)
+	private Instant createdTime;
 	private String contentType;
 
+	@Column(nullable = false)
 	private byte[] file;
 
 	/**
 	 * This document is part of the following protocols
 	 */
+	@JsonIdentityReference(alwaysAsId = true) // list contained protocols just as an array of ids
 	@ManyToMany(mappedBy = "documents")
 	private List<Protocol> protocols = new ArrayList<>();
 
 	public Document(String name, String contentType, byte[] file) {
 		this.name = name;
 		this.contentType = contentType;
-		this.createdTime = LocalDateTime.now();
 		this.file = file;
 	}
 
 	/**
 	 * Modify by copying only non-null attributes of another Document.
 	 */
-	public void modifyUsing(Document another) {
+	public void modifyFrom(Document another) {
 		if (another.name != null) {
 			this.name = another.name;
 		}
@@ -64,13 +74,13 @@ public class Document {
 		}
 	}
 
-	public boolean isPartOfAnyProtocol() {
-		return !protocols.isEmpty();
+	public void clearAllNonMetadata() {
+		this.id = null;
+		this.file = null;
 	}
 
-	public List<Integer> getProtocolIds() {
-		return protocols.stream()
-				.map(Protocol::getId)
-				.collect(Collectors.toList());
+	@JsonIgnore
+	public boolean isPartOfAnyProtocol() {
+		return !protocols.isEmpty();
 	}
 }

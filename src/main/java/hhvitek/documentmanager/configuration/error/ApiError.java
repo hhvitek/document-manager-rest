@@ -1,16 +1,14 @@
-package hhvitek.documentmanager.error;
+package hhvitek.documentmanager.configuration.error;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
-@Builder
+@Getter
 public class ApiError {
-	private int status;
-	private String message;
+	private final int status;
+	private final String message;
 
 	public ApiError(int status, String message) {
 		this.status = status;

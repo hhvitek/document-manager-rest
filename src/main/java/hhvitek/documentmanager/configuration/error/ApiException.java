@@ -1,4 +1,4 @@
-package hhvitek.documentmanager.error;
+package hhvitek.documentmanager.configuration.error;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -10,9 +10,5 @@ public class ApiException extends ResponseStatusException {
 
 	public ApiException(HttpStatus status, String message) {
 		super(status, message);
-	}
-
-	public ApiException(HttpStatus status, String message, Throwable throwable) {
-		super(status, message, throwable);
 	}
 }

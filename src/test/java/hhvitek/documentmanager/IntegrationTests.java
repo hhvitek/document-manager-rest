@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -47,25 +49,33 @@ class IntegrationTests {
 				)
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.*", hasSize(2)))
+				.andExpect(jsonPath("$.[0].*", hasSize(7))) // no surprise new field in json
 				.andExpect(jsonPath("$.[0].id", is(1)))
 				.andExpect(jsonPath("$.[0].name", is("first")))
-				.andExpect(jsonPath("$.[0].createdBy", is("firstUser")))
+				.andExpect(jsonPath("$.[0].created_by", is("firstUser")))
+				.andExpect(jsonPath("$.[0].created_time", is("2022-12-22T22:22:22Z")))
+				.andExpect(jsonPath("$.[0].content_type", is(nullValue())))
+				.andExpect(jsonPath("$.[0].file", is(not(nullValue()))))
+				.andExpect(jsonPath("$.[0].protocols", hasSize(1)))
 				.andExpect(content().string(containsString("\"id\":2,\"name\":\"second\"")));
 	}
 
 	@Test
 	@WithMockUser
-	public void initDbAsExpectedSingleProtocolsAlreadyExistsTest() throws Exception {
+	public void initDbAsExpectedSingleProtocolAlreadyExistsTest() throws Exception {
 		mockMvc.perform(
 						get(API_PROTOCOLS)
 								.accept(MediaType.APPLICATION_JSON_VALUE)
 				)
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.*", hasSize(1)))
+				.andExpect(jsonPath("$.[0].*", hasSize(5)))
 				.andExpect(jsonPath("$.[0].id", is(1)))
-				.andExpect(jsonPath("$.[0].createdBy", is("user1")))
-				.andExpect(jsonPath("$.[0].documentIds", hasSize(1)))
-				.andExpect(jsonPath("$.[0].documentIds[0]", is(1)));
+				.andExpect(jsonPath("$.[0].created_by", is("user1")))
+				.andExpect(jsonPath("$.[0].created_time", is("2022-12-22T22:22:22Z")))
+				.andExpect(jsonPath("$.[0].state", is("NEW")))
+				.andExpect(jsonPath("$.[0].documents", hasSize(1)))
+				.andExpect(jsonPath("$.[0].documents[0]", is(1)));
 	}
 
 	@Test
@@ -79,7 +89,9 @@ class IntegrationTests {
 				)
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("name", is("anotherName")))
-				.andExpect(jsonPath("createdBy", is("firstUser")));
+				.andExpect(jsonPath("created_by", is("firstUser")))
+				.andExpect(jsonPath("created_time", is("2022-12-22T22:22:22Z"))); // not changed
+
 
 		mockMvc.perform(
 						get(API_DOCUMENTS)
@@ -89,16 +101,16 @@ class IntegrationTests {
 				.andExpect(jsonPath("$.*", hasSize(2)))
 				.andExpect(jsonPath("$.[0].id", is(1)))
 				.andExpect(jsonPath("$.[0].name", is("anotherName")))
-				.andExpect(jsonPath("$.[0].createdBy", is("firstUser")))
+				.andExpect(jsonPath("$.[0].created_by", is("firstUser")))
 
 				.andExpect(jsonPath("$.[1].id", is(2)))
 				.andExpect(jsonPath("$.[1].name", is("second"))) // modified
-				.andExpect(jsonPath("$.[1].createdBy", is("secondUser"))); // retained old
+				.andExpect(jsonPath("$.[1].created_by", is("secondUser"))); // retained old
 	}
 
 	@Test
 	@WithMockUser
-	public void uploadNewTest() throws Exception {
+	public void uploadNewDocumentTest() throws Exception {
 		MockMultipartFile document = new MockMultipartFile(
 				"document", // must be document see controller @RequestParam
 				"file.txt",
@@ -121,7 +133,9 @@ class IntegrationTests {
 
 				.andExpect(jsonPath("$.[2].id", is(3)))
 				.andExpect(jsonPath("$.[2].name", is("file.txt")))
-				.andExpect(jsonPath("$.[2].contentType", is("text/plain")));
+				.andExpect(jsonPath("$.[2].content_type", is("text/plain")))
+				.andExpect(jsonPath("$.[2].created_by", is("user"))) // test username added properly
+				.andExpect(jsonPath("$.[2].created_time", is(not(nullValue())))); // also createdTime added as well as username
 	}
 
 	@Test
@@ -130,7 +144,7 @@ class IntegrationTests {
 		 mockMvc.perform(post(API_PROTOCOLS)
 						.accept(MediaType.APPLICATION_JSON_VALUE)
 						.contentType(MediaType.APPLICATION_JSON_VALUE)
-						.content("{\"createdBy\" : \"user\"}")
+						.content("{\"created_by\" : \"user\"}")
 				)
 				.andExpect(status().isBadRequest())
 				.andExpect(status().reason(containsString("Protocol must contain at least one document!")));
@@ -139,7 +153,7 @@ class IntegrationTests {
 		mockMvc.perform(post(API_PROTOCOLS)
 						.accept(MediaType.APPLICATION_JSON_VALUE)
 						.contentType(MediaType.APPLICATION_JSON_VALUE)
-						.content("{\"createdBy\" : \"user\", \"documentIds\" : []}")
+						.content("{\"created_by\" : \"user\", \"documents\" : []}")
 				)
 				.andExpect(status().isBadRequest())
 				.andExpect(status().reason(containsString("Protocol must contain at least one document!")));
@@ -147,15 +161,15 @@ class IntegrationTests {
 		mockMvc.perform(post(API_PROTOCOLS)
 						.accept(MediaType.APPLICATION_JSON_VALUE)
 						.contentType(MediaType.APPLICATION_JSON_VALUE)
-						.content("{\"createdBy\" : \"user\", \"documentIds\" : [1]}")
+						.content("{\"created_by\" : \"user\", \"documents\" : [1]}")
 				)
 				.andExpect(status().isOk())
-				.andExpect(content().string(containsString("\"createdBy\":\"user\"")));
+				.andExpect(content().string(containsString("\"created_by\":\"user\"")));
 
 		mockMvc.perform(post(API_PROTOCOLS)
 						.accept(MediaType.APPLICATION_JSON_VALUE)
 						.contentType(MediaType.APPLICATION_JSON_VALUE)
-						.content("{\"createdBy\" : \"user\", \"documentIds\" : [1, 9999]}")
+						.content("{\"created_by\" : \"user\", \"documents\" : [1, 9999]}")
 				)
 				.andExpect(status().isBadRequest())
 				.andExpect(status().reason(containsString("At least one document was not found.")));
@@ -192,7 +206,28 @@ class IntegrationTests {
 				)
 				.andExpect(status().isOk())
 				.andExpect(content().string(containsString("\"id\":3,\"name\":\"file.txt\"")))
-				.andExpect(jsonPath("createdBy", is("user")));
+				.andExpect(jsonPath("created_by", is("user")));
+	}
+
+	@Test
+	@WithMockUser
+	public void editExistingDocumentDoesNotChangeCreatedByAndCreatedTime() throws Exception {
+		MockMultipartFile document = new MockMultipartFile(
+				"document", // must be document see controller @RequestParam
+				"file.txt",
+				"text/plain",
+				"This is a nice text".getBytes(StandardCharsets.UTF_8));
+
+		mockMvc.perform(
+						multipart(HttpMethod.PUT, API_DOCUMENTS + "/1")
+								.file(document)
+								.accept(MediaType.APPLICATION_JSON_VALUE)
+				)
+				.andExpect(status().isOk())
+				.andExpect(content().string(containsString("\"id\":1,\"name\":\"file.txt\"")))
+				.andExpect(jsonPath("created_by", is("firstUser")))
+				.andExpect(jsonPath("created_time", is("2022-12-22T22:22:22Z")))
+				.andExpect(jsonPath("content_type", is("text/plain")));
 	}
 
 	@Test

@@ -1,61 +1,36 @@
 package hhvitek.documentmanager.protocol;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
+import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.springframework.format.annotation.DateTimeFormat;
-
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @NoArgsConstructor
 public class ProtocolDTO {
-	private Integer id;
-
 	private String createdBy;
-	@DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-	private LocalDateTime createdTime;
+	private Instant createdTime;
 	private ProtocolState state;
 
-	private List<Integer> documentIds;
-
-	public ProtocolDTO(Protocol protocol) {
-		this.id = protocol.getId();
-		this.createdBy = protocol.getCreatedBy();
-		this.createdTime = protocol.getCreatedTime();
-		this.state = protocol.getState();
-		this.documentIds = protocol.getDocumentIds();
-	}
+	private List<Integer> documents;
 
 	/**
-	 * Creates protocol without id and documents.
+	 * Creates protocol without id and documents. If some attributes are missing inside this DTO, default values are used instead to create Protocol.
+	 *
+	 * For example. No createdTime value -> uses current time instead...
 	 */
-	public Protocol toProtocolWithoutDocuments() {
-		Protocol protocol = new Protocol();
-		protocol.setCreatedBy(createdBy);
-		protocol.setCreatedTime(createdTime);
-		protocol.setState(state);
+	public Protocol toProtocolWithDefaultValues(String createdBy) {
+		Protocol protocol = new Protocol(createdBy, Instant.now(), ProtocolState.NEW);
+		modifyProtocol(protocol);
 		return protocol;
 	}
 
-	public static ProtocolDTO create(Protocol protocol) {
-		return new ProtocolDTO(protocol);
+	public boolean hasAnyDocuments() {
+		return documents != null && !documents.isEmpty();
 	}
 
-	public static List<ProtocolDTO> createList(Collection<Protocol> protocols) {
-		return protocols.stream()
-				.map(ProtocolDTO::new)
-				.collect(Collectors.toList());
-	}
-
-	public boolean hasAnyDocumentIds() {
-		return documentIds != null && !documentIds.isEmpty();
-	}
-
-	public void modify(Protocol protocolToModify) {
+	public void modifyProtocol(Protocol protocolToModify) {
 		if (createdBy != null) {
 			protocolToModify.setCreatedBy(createdBy);
 		}
